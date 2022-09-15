@@ -1,0 +1,87 @@
+<div id="app"></div>
+
+<script type="module">
+
+  import {useState, createElement} from 'https://cdn.skypack.dev/react';
+  import {render} from 'https://cdn.skypack.dev/react-dom';
+  import {createTlx} from './lib.js';
+  
+  const tlx = createTlx(createElement);
+
+  const Counter = (props) => {
+    const [defaultValue, setDefaultValue] = useState(0);
+    const { min = 0, max = 999, value = defaultValue, setValue = setDefaultValue } = props ?? {};
+    const validate = (value) => {
+      if(/^\d+$/.test(value) && parseInt(value) <= max) {
+        setValue(parseInt(value));
+      }
+    }
+    return tlx`
+      <div style="display: inline-flex; width: 100%; border: 1px solid #a3a3a3; border-radius: 4px; overflow: hidden; height: 40px; box-sizing: border-box;">
+        ${Button({
+          text: '-',
+          onClick: () => setValue(value - 1),
+          styles: {
+            fontSize: '1.2rem',
+            borderWidth: '0px 1px 0px 0px'
+          },
+          disabled: value <= min
+        })}
+        <input type="text" @input="${(event) => validate(event.target.value)}" value="${value}" style="font-size: 1rem; text-align: center; border: none; flex: 1; min-width: 0; height: 40px; outline: none;">
+        ${Button({
+          text: '+',
+          onClick: () => setValue(value + 1),
+          styles: {
+            fontSize: '1.2rem',
+            borderWidth: '0px 0px 0px 1px'
+          },
+          disabled: value >= max
+        })}
+      </div>
+    `;
+  }
+  
+  const Button = (props) => {
+    const styles = {
+      minWidth: '40px',
+      height: '40px',
+      border: 'none',
+      outline: 'none',
+      border: '1px solid #a3a3a3',
+      backgroundColor: props.disabled ? '#f5f5f5' : '#e5e5e5',
+      cursor: props.disabled ? 'default' : 'pointer',
+      fontSize: '1rem',
+      fontFamily: 'Inter',
+      ...props.styles
+    };
+    return tlx`
+      <button disabled="${props.disabled}" style="${styles}" @click="${() => props.onClick()}">${props.text}</button>
+    `;
+  }
+  
+  const App = () => {
+    const [quantity, setQuantity] = useState(1);
+    const isDisabled = quantity <= 0;
+    return tlx`
+      <div style="margin: 100px; display: flex; width: 150px; flex-direction: column; gap: 15px; align-items: flex-start;">
+        ${Counter({ value: quantity, setValue: setQuantity })}
+        ${Button({
+          text: 'Add to cart',
+          styles: {
+            backgroundColor: isDisabled ? '#f5f5f5' : '#f97316',
+            borderColor: isDisabled ? '#d4d4d4' : '#c2410c',
+            color: isDisabled ? '#a3a3a3' : 'white',
+            borderRadius: '4px',
+            width: '100%'
+          },
+          onClick: () => alert(`Added ${quantity} ${quantity > 1 ? 'items' : 'item'} to the cart`),
+          disabled: isDisabled
+        })}
+      </div>
+    `;
+  }
+  
+  const app = document.querySelector('#app');
+  render(createElement(App), app);
+
+</script>
