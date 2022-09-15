@@ -68,36 +68,56 @@ export const createTlx = (createElement) => {
     (node.childNodes ?? []).forEach((child) => children.push(...render(child, refs)));
     return [createElement(tag, attributes, ...children)];
   }
-
-  function apply(value, refs) {
-    let values = [];
-    const expr = /\$tlx-\d+/g;
-    let match = null;
-    let last = 0;
-    while((match = expr.exec(value)) !== null) {
-      const index = match.index;
-      values.push(value.substring(last, index));
-      values.push(refs[match[0]]);
-      last = index + match[0].length;
-    }
-    values.push(value.substring(last));
-    return values;
-  }
-
-  function ltr(parts, props) {
-    let string = '';
-    const refs = {};
-    for(let i = 0; i < parts.length; i++) {
-      string += parts[i];
-      if(props[i] !== undefined) {
-        const id = `$tlx-${counter}`;
-        refs[id] = props[i];
-        string += id ?? '';
-        counter++;
-      }
-    }
-    return [string.trim(), refs];
-  }
   
   return tlx;
+}
+
+export const css = (parts, ...props) => {
+  const [css, refs] = ltr(parts, props);
+  const styles = {};
+  for(const item of css.split(';')) {
+    if(item.trim().length === 0) {
+      break;
+    }
+    let [key, value] = item.split(':');
+    key = key.trim();
+    let match = null;
+    if((match = /-(\w)/.exec(key)) !== null) {
+      const char = match[1];
+      key = key.replace(`-${char}`, char.toUpperCase());
+    }
+    value = value.trim();
+    styles[key] = apply(value, refs).join('');
+  }
+  return styles;
+}
+
+function apply(value, refs) {
+  let values = [];
+  const expr = /\$tlx-\d+/g;
+  let match = null;
+  let last = 0;
+  while((match = expr.exec(value)) !== null) {
+    const index = match.index;
+    values.push(value.substring(last, index));
+    values.push(refs[match[0]]);
+    last = index + match[0].length;
+  }
+  values.push(value.substring(last));
+  return values;
+}
+
+function ltr(parts, props) {
+  let string = '';
+  const refs = {};
+  for(let i = 0; i < parts.length; i++) {
+    string += parts[i];
+    if(props[i] !== undefined) {
+      const id = `$tlx-${counter}`;
+      refs[id] = props[i];
+      string += id ?? '';
+      counter++;
+    }
+  }
+  return [string.trim(), refs];
 }
