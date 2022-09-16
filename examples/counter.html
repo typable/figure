@@ -1,0 +1,49 @@
+<div id="app"></div>
+
+<script type="module">
+
+  import {useState, createElement} from 'https://cdn.skypack.dev/react';
+  import {render} from 'https://cdn.skypack.dev/react-dom';
+  import {segment, html, css} from '../segment.js';
+
+  const Counter = () => {
+    const [count, setCount] = useState(0);
+
+    const style = css`
+      .counter {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 50px;
+      }
+  
+      .counter p {
+        width: 30px;
+        margin: 0px;
+        text-align: center;
+        font-family: monospace;
+        font-size: 16px;
+      }
+      
+      .counter button {
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+      }
+    `;
+
+    return html`
+      <div class="counter">
+        ${style}
+        <button @click="${() => setCount(count - 1)}">-</button>
+        <p>${count}</p>
+        <button @click="${() => setCount(count + 1)}">+</button>
+      </div>
+    `;
+  }
+  
+  const app = document.querySelector('#app');
+  segment({createElement});
+  render(createElement(Counter), app);
+
+</script>
