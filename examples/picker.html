@@ -4,9 +4,7 @@
 
   import {useState, createElement} from 'https://cdn.skypack.dev/react';
   import {render} from 'https://cdn.skypack.dev/react-dom';
-  import {createTlx, css} from '../tlx.js';
-
-  const tlx = createTlx(createElement);
+  import {segment, html, css} from '../segment.js';
 
   const Range = ({index, value, setValue}) => {
     const style = css`
@@ -30,7 +28,7 @@
       }
     `;
 
-    return tlx`
+    return html`
       <div class="range v-${index}-${value}">
         ${style}
         <input
@@ -73,7 +71,7 @@
 
     const hex = (dec) => dec.toString(16).toUpperCase().padStart(2, '0');
 
-    return tlx`
+    return html`
       <div class="picker">
         ${style}
         <div class="preview"></div>
@@ -85,8 +83,9 @@
       </div>
     `;
   }
-
+  
   const app = document.querySelector('#app');
+  segment({createElement});
   render(createElement(Picker), app);
 
 </script>
