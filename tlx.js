@@ -1,14 +1,12 @@
 const parser = new DOMParser();
 let counter = 1000;
+let tlx = null;
 
 export const createTlx = (createElement) => {
-  function tlx(parts, ...props) {
+  function parse(parts, ...props) {
     const [html, refs] = ltr(parts, props);
     const dom = parser.parseFromString(html, 'text/html');
-    if(dom.body.childNodes.length !== 1) {
-      throw 'invalid DOM structure!';
-    }
-    const node = dom.body.childNodes[0];
+    const node = dom.body.childNodes[0] ?? dom.head.childNodes[0];
     const elements = render(node, refs);
     if(elements.length !== 1) {
       throw 'invalid VDOM structure!';
@@ -20,7 +18,10 @@ export const createTlx = (createElement) => {
     if(node.nodeType === Node.TEXT_NODE) {
       return apply(node.textContent, refs);
     }
-    const tag = node.tagName.toLowerCase();
+    if(node.nodeType === Node.COMMENT_NODE) {
+      return [];
+    }
+    const tag = node.tagName;
     const attributes = {};
     for(const attribute of node.attributes) {
       const key = attribute.name;
@@ -69,10 +70,20 @@ export const createTlx = (createElement) => {
     return [createElement(tag, attributes, ...children)];
   }
   
+  tlx = parse;
   return tlx;
 }
 
 export const css = (parts, ...props) => {
+  const [css, refs] = ltr(parts, props);
+  return tlx`
+    <style type="text/css">
+      ${apply(css, refs).join('')}
+    </style>
+  `;
+}
+
+export const style = (parts, ...props) => {
   const [css, refs] = ltr(parts, props);
   const styles = {};
   for(const item of css.split(';')) {
@@ -100,7 +111,11 @@ function apply(value, refs) {
   while((match = expr.exec(value)) !== null) {
     const index = match.index;
     values.push(value.substring(last, index));
-    values.push(refs[match[0]]);
+    let refValue = refs[match[0]];
+    if(refValue instanceof Function) {
+      refValue = refValue();
+    }
+    values.push(refValue);
     last = index + match[0].length;
   }
   values.push(value.substring(last));

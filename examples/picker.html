@@ -1,0 +1,92 @@
+<div id="app"></div>
+
+<script type="module">
+
+  import {useState, createElement} from 'https://cdn.skypack.dev/react';
+  import {render} from 'https://cdn.skypack.dev/react-dom';
+  import {createTlx, css} from '../tlx.js';
+
+  const tlx = createTlx(createElement);
+
+  const Range = ({index, value, setValue}) => {
+    const style = css`
+      .range input[type=range] {
+        width: 100%;
+        -webkit-appearance: none;
+      }
+
+      .range.v-${index}-${value} input[type=range]::-webkit-slider-runnable-track {
+        background-color: rgb(${Array.from([0, 0, 0], (item, i) => i === index ? value : item).join(', ')});
+        width: 100%;
+        height: 12px;
+      }
+  
+      .range input[type=range]::-webkit-slider-thumb {
+        background-color: #CCC;
+        width: 12px;
+        height: 12px;
+        -webkit-appearance: none;
+        cursor: pointer;
+      }
+    `;
+
+    return tlx`
+      <div class="range v-${index}-${value}">
+        ${style}
+        <input
+          type="range"
+          @change="${(event) => setValue(Number(event.target.value))}"
+          min="0"
+          max="255"
+          value="${value}"
+        >
+      </div>
+    `;
+  }
+
+  const Picker = () => {
+    const [red, setRed] = useState(255);
+    const [green, setGreen] = useState(65);
+    const [blue, setBlue] = useState(155);
+
+    const style = css`
+      .picker {
+        display: inline-flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 50px;
+      }
+  
+      .picker .preview {
+        width: 200px;
+        height: 200px;
+        background-color: rgb(${red}, ${green}, ${blue});
+      }
+  
+      .picker p {
+        margin: 0px;
+        text-align: center;
+        font-family: monospace;
+        font-size: 16px;
+      }
+    `;
+
+    const hex = (dec) => dec.toString(16).toUpperCase().padStart(2, '0');
+
+    return tlx`
+      <div class="picker">
+        ${style}
+        <div class="preview"></div>
+        <p>rgb(${red}, ${green}, ${blue})</p>
+        <p>#${hex(red)}${hex(green)}${hex(blue)}</p>
+        ${Range({ index: 0, value: red, setValue: setRed })}
+        ${Range({ index: 1, value: green, setValue: setGreen })}
+        ${Range({ index: 2, value: blue, setValue: setBlue })}
+      </div>
+    `;
+  }
+
+  const app = document.querySelector('#app');
+  render(createElement(Picker), app);
+
+</script>
