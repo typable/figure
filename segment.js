@@ -7,6 +7,17 @@ const segment = ({createElement}) => {
 }
 
 const html = (strings, ...props) => {
+  const elements = parse(strings, ...props);
+  if(elements.length === 0) {
+    throw 'No DOM element was returned!';
+  }
+  if(elements.length > 1) {
+    console.warn('Only one DOM element can be returned!');
+  }
+  return elements[0];
+}
+
+const parse = (strings, ...props) => {
   const [html, refs] = compose(strings, props);
   let dom;
   try {
@@ -16,15 +27,8 @@ const html = (strings, ...props) => {
     console.error(error);
     throw 'Invalid DOM structure!';
   }
-  const node = dom.body.childNodes[0] ?? dom.head.childNodes[0];
-  const elements = render(node, refs);
-  if(elements.length === 0) {
-    throw 'No DOM element was returned!';
-  }
-  if(elements.length > 1) {
-    console.warn('Only one DOM element can be returned!');
-  }
-  return elements[0];
+  const nodes = [...dom.head.childNodes, ...dom.body.childNodes];
+  return nodes.map((node) => render(node, refs));
 }
 
 /**
@@ -37,12 +41,16 @@ const html = (strings, ...props) => {
  * @return {any[]} The joined HTML string and the properties mapped to there references.
  */
 const compose = (strings, props) => {
+  if(strings === undefined) {
+    // handles dyn function without body
+    return ['', {}];
+  }
   const refs = {};
   let string = '';
   for(let i = 0; i < strings.length; i++) {
     string += strings[i];
     if(props[i] !== undefined) {
-      const uid = `$tlx-${count++}`;
+      const uid = `$seg-${count++}`;
       refs[uid] = props[i];
       string += uid ?? '';
     }
@@ -58,7 +66,7 @@ const compose = (strings, props) => {
  * @return {any[]} The string populate with the passed properties
  */
 const feed = (string, refs) => {
-  const expr = /\$tlx-\d+/g;
+  const expr = /\$seg-\d+/g;
   let values = [];
   let match = null;
   let last = 0;
@@ -75,6 +83,12 @@ const feed = (string, refs) => {
   }
   values.push(string.substring(last));
   return values;
+}
+
+const dyn = (element, props) => {
+  return (strings, ...childProps) => {
+    return create(element, props, ...parse(strings, ...childProps));
+  };
 }
 
 const render = (node, refs) => {
@@ -138,4 +152,4 @@ import {defCss, defStyle} from './mods.js';
 const css = defCss({html, compose, feed});
 const style = defStyle({html, compose, feed});
 
-export { segment, html, css, style };
+export { segment, html, dyn, css, style };
