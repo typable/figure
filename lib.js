@@ -2,7 +2,7 @@ const parser = new DOMParser();
 let count = 1000;
 let create = null;
 
-const segment = ({createElement}) => {
+const figure = ({createElement}) => {
   create = createElement;
 }
 
@@ -138,4 +138,4 @@ import {defCss, defStyle} from './mods.js';
 const css = defCss({html, compose, feed});
 const style = defStyle({html, compose, feed});
 
-export { segment, html, css, style };
+export { figure, html, css, style };

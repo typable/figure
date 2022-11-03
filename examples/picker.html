@@ -4,7 +4,7 @@
 
   import {useState, createElement} from 'https://cdn.skypack.dev/react';
   import {render} from 'https://cdn.skypack.dev/react-dom';
-  import {segment, html, css} from '../segment.js';
+  import {figure, html, css} from '../lib.js';
 
   const Range = ({index, value, setValue}) => {
     const style = css`
@@ -85,7 +85,7 @@
   }
   
   const app = document.querySelector('#app');
-  segment({createElement});
+  figure({createElement});
   render(createElement(Picker), app);
 
 </script>

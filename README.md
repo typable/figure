@@ -1,12 +1,12 @@
-# segment
+# figure
 Reactive template literals for React
 
 ### Example
 
 ```javascript
-import {segment, html, css} from './segment.js';
+import {figure, html, css} from '...';
 
-segment({createElement});
+figure({createElement});
 
 const Counter = () => {
   const [count, setCount] = useState(0);
