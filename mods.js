@@ -1,6 +1,6 @@
 export const defCss = ({html, compose, feed}) => {
-  return (parts, ...props) => {
-    const [css, refs] = compose(parts, props);
+  return (strings, ...props) => {
+    const [css, refs] = compose(strings, props);
     return html`
       <style type="text/css">
         ${feed(css, refs).join('')}
@@ -10,8 +10,8 @@ export const defCss = ({html, compose, feed}) => {
 }
 
 export const defStyle = ({compose, feed}) => {
-  return (parts, ...props) => {
-    const [css, refs] = compose(parts, props);
+  return (strings, ...props) => {
+    const [css, refs] = compose(strings, props);
     const styles = {};
     for(const item of css.split(';')) {
       if(item.trim().length === 0) {
