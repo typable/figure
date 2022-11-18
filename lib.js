@@ -111,6 +111,10 @@ const render = (node, refs) => {
           const event = match[1];
           attributes[`on${event.substring(0, 1).toUpperCase()}${event.substring(1)}`] = refs[ref];
         }
+        else if((match = /^\[(\w+)\]$/.exec(key)) !== null) {
+          const event = match[1];
+          attributes['value'] = refs[ref];
+        }
         else {
           attributes[key] = refs[ref];
         }
