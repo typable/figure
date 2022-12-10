@@ -6,7 +6,7 @@ Reactive template literals for React
 ```javascript
 import {figure, html, css} from '...';
 
-figure({createElement});
+figure({ createElement });
 
 const Counter = () => {
   const [count, setCount] = useState(0);
