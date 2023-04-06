@@ -6,20 +6,40 @@ Reactive template literals for React
 ```javascript
 import figure from '...';
 
-const { html, dyn } = figure({ createElement });
+// initialize figure
+const { dist } = figure({ createElement });
 
-const global = createContext({});
+// add your components to a bundle
+const ElementBundle = {
+  button: Button,
+};
+
+// add your bundles to the dictionary
+const html = dist({
+  el: ElementBundle,
+});
 
 function App() {
-  const [name, setName] = useState('world');
-
-  const context = {};
-
   return html`
-    ${dyn(global.Provider, { value: context }), html`
-      <h1>Hello ${name}!</h1>
-      <p>Some description text.</p>
-    `}
+    <main>
+      <el:button
+        type="primary"
+        on:click=${() => console.log('It works!')}
+      >
+        <span>Click me</span>
+      </el:button>
+    </main>
+  `;
+}
+
+function Button() {
+  return html`
+    <button
+      on:click=${props?.onClick}
+      class="btn btn--${props?.type}"
+    >
+      ${props?.children}
+    </button>
   `;
 }
 

@@ -1,4 +1,4 @@
-import { Options, Props, ReactElement, ReactFunction, Refs, Slices, Values } from './types.ts';
+import { Options, Props, ReactElement, ReactFunction, Refs, Slices, Values, Dict } from './types.ts';
 
 export default function figure({ createElement }: Options) {
 
@@ -8,24 +8,34 @@ export default function figure({ createElement }: Options) {
   let count = 0;
 
   /**
-   * Converts the template literal HTML syntax into React elements.
-   * @param {Slices} slices - The template literal slices
-   * @param {Values} values - The template literal values
-   * @return {ReactElement[]} The converted HTML as React elements.
+   * Returns the a function for rendering HTML.
+   * @param {Dict} dict - The dictionary for resolving React components.
+   * @return {Function} The function for rendering HTML.
    */
-  function html(slices: Slices, ...values: Values): ReactElement[] {
-    const [html, refs] = compose(slices, values);
-    let dom;
-    try {
-      dom = parser.parseFromString(html, 'text/html');
+  function dict(dict?: Dict): (slices: Slices, ...values: Values) => ReactElement[] {
+
+    /**
+     * Converts the template literal HTML syntax into React elements.
+     * @param {Slices} slices - The template literal slices
+     * @param {Values} values - The template literal values
+     * @return {ReactElement[]} The converted HTML as React elements.
+     */
+    function html(slices: Slices, ...values: Values): ReactElement[] {
+      const [html, refs] = compose(slices, values);
+      let dom;
+      try {
+        dom = parser.parseFromString(html, 'text/html');
+      }
+      catch (error) {
+        console.error(error);
+        throw 'Invalid DOM structure!';
+      }
+      // collect all nodes from head and body
+      const nodes = [...dom.head.childNodes, ...dom.body.childNodes];
+      return nodes.map((node) => render(node, refs, dict ?? {}));
     }
-    catch (error) {
-      console.error(error);
-      throw 'Invalid DOM structure!';
-    }
-    // collect all nodes from head and body
-    const nodes = [...dom.head.childNodes, ...dom.body.childNodes];
-    return nodes.map((node) => render(node, refs));
+
+    return html;
   }
 
   /**
@@ -89,7 +99,7 @@ export default function figure({ createElement }: Options) {
    * @param {Refs} refs - The values mapped to there references
    * @return {ReactElement[]} The converted HTML node as React element
    */
-  function render(node: Node, refs: Refs): ReactElement[] {
+  function render(node: Node, refs: Refs, dict: Dict): ReactElement[] {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node as Text;
       if (text.textContent == null) {
@@ -103,7 +113,7 @@ export default function figure({ createElement }: Options) {
       return [];
     }
     const element = node as HTMLElement;
-    const tag = element.tagName;
+    const tag = element.tagName.toLowerCase();
     const props: Props = {};
     // iterate over each attribute and add it to the props
     for (const attribute of element.attributes) {
@@ -157,22 +167,16 @@ export default function figure({ createElement }: Options) {
     }
     const children: ReactElement[] = [];
     // recursively render all child nodes
-    (node.childNodes ?? []).forEach((child) => children.push(...render(child, refs)));
-    return [createElement(tag, props, ...children)];
+    (node.childNodes ?? []).forEach((child) => children.push(...render(child, refs, dict)));
+    const domain = tag.split(':');
+    // look up tag name in dictionary
+    // deno-lint-ignore no-explicit-any
+    const component: ReactFunction | undefined = domain.reduce((dict: any, level) => {
+      return dict?.[level];
+    }, dict);
+    // use React component or tag name
+    return [createElement(component ?? tag, props, ...children)];
   }
 
-  /**
-   * Creates a dynamic component with its own state.
-   * Should be used if the component is statefull (contains hooks).
-   *
-   * @param {ReactFunction} element - The string containing references
-   * @param {Props} props - The component properties
-   * @param {ReactElement[]} children - The child elements
-   * @return {ReactElement} The created React component
-   */
-  function dyn(element: ReactFunction, props?: Props, children?: ReactElement[]): ReactElement {
-    return createElement(element, props, children);
-  }
-
-  return { html, dyn };
+  return { dict };
 }
