@@ -1,5 +1,3 @@
-export type Option<T> = T | null | undefined;
-
 export type ReactElement = unknown;
 export type ReactFunction = unknown;
 export type CreateElement = (element: ReactFunction, props?: Props, ...children: ReactElement[]) => ReactElement;

@@ -4,26 +4,24 @@ Reactive template literals for React
 ### Example
 
 ```javascript
-import {figure, html, css} from '...';
+import figure from '...';
 
-figure({ createElement });
+const { html, dyn } = figure({ createElement });
 
-const Counter = () => {
-  const [count, setCount] = useState(0);
+const global = createContext({});
 
-  const style = css`
-    .counter { ... }
-  `;
+function App() {
+  const [name, setName] = useState('world');
+
+  const context = {};
 
   return html`
-    <div class="counter">
-      ${style}
-      <button @click="${() => setCount(count - 1)}">-</button>
-      <p>${count}</p>
-      <button @click="${() => setCount(count + 1)}">+</button>
-    </div>
+    ${dyn(global.Provider, { value: context }), html`
+      <h1>Hello ${name}!</h1>
+      <p>Some description text.</p>
+    `}
   `;
 }
 
-render(createElement(Counter), document.querySelector('#app'));
+render(createElement(App), document.querySelector('#root'));
 ```
