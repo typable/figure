@@ -7,7 +7,7 @@ Reactive template literals for React
 import figure from '...';
 
 // initialize figure
-const { dist } = figure({ createElement });
+const { dict } = figure({ createElement });
 
 // add your components to a bundle
 const ElementBundle = {
@@ -15,7 +15,7 @@ const ElementBundle = {
 };
 
 // add your bundles to the dictionary
-const html = dist({
+const html = dict({
   el: ElementBundle,
 });
 
