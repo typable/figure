@@ -7,16 +7,13 @@ Reactive template literals for React
 import figure from '...';
 
 // initialize figure
-const { dict } = figure({ createElement });
+const { dict } = figure(React.createElement);
 
-// add your components to a bundle
-const ElementBundle = {
-  button: Button,
-};
-
-// add your bundles to the dictionary
+// add your component to the dictionary
 const html = dict({
-  el: ElementBundle,
+  el: {
+    button: Button,
+  },
 });
 
 function App() {
@@ -43,5 +40,7 @@ function Button() {
   `;
 }
 
-render(createElement(App), document.querySelector('#root'));
+// render your App component as usual
+const root = document.querySelector('#root');
+ReactDOM.render(React.createElement(App), root);
 ```

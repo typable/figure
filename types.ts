@@ -1,8 +1,8 @@
 export type ReactElement = unknown;
 export type ReactFunction = (props: unknown) => ReactElement;
-export type CreateElement = (element: ReactFunction | string, props?: Props, ...children: ReactElement[]) => ReactElement;
-
-export type Options = { createElement: CreateElement };
+export type CreateFunction = (element: ReactFunction | string, props?: Props, ...children: ReactElement[]) => ReactElement;
+export type HtmlFunction = (slices: Slices, ...values: Values) => ReactElement[];
+export type Figure = { dict: (dict?: Dict) => HtmlFunction, dyn: CreateFunction };
 export type Refs = Record<string, unknown>;
 export type Props = Record<string, unknown>;
 export type Slices = TemplateStringsArray;

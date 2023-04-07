@@ -1,6 +1,22 @@
-import { Options, Props, ReactElement, ReactFunction, Refs, Slices, Values, Dict } from './types.ts';
+import {
+  Dict,
+  Figure,
+  Props,
+  ReactElement,
+  HtmlFunction,
+  ReactFunction,
+  CreateFunction,
+  Refs,
+  Slices,
+  Values,
+} from './types.ts';
 
-export default function figure({ createElement }: Options) {
+/**
+ * Initializes the figure utility.
+ * @param {CreateFunction} create - The React createElement function.
+ * @return {Figure} The util functions collected in an object.
+ */
+export default function figure(create: CreateFunction): Figure {
 
   // the parser for interpreting HTML
   const parser = new DOMParser();
@@ -12,7 +28,7 @@ export default function figure({ createElement }: Options) {
    * @param {Dict} dict - The dictionary for resolving React components.
    * @return {Function} The function for rendering HTML.
    */
-  function dict(dict?: Dict): (slices: Slices, ...values: Values) => ReactElement[] {
+  function dict(dict?: Dict): HtmlFunction {
 
     /**
      * Converts the template literal HTML syntax into React elements.
@@ -22,33 +38,19 @@ export default function figure({ createElement }: Options) {
      */
     function html(slices: Slices, ...values: Values): ReactElement[] {
       const [html, refs] = compose(slices, values);
-      let dom;
       try {
-        dom = parser.parseFromString(html, 'text/html');
+        const dom = parser.parseFromString(html, 'text/html');
+        // collect all nodes from head and body
+        const nodes = [...dom.head.childNodes, ...dom.body.childNodes];
+        return nodes.map((node) => render(node, refs, dict ?? {}));
       }
       catch (error) {
         console.error(error);
         throw 'Invalid DOM structure!';
       }
-      // collect all nodes from head and body
-      const nodes = [...dom.head.childNodes, ...dom.body.childNodes];
-      return nodes.map((node) => render(node, refs, dict ?? {}));
     }
 
     return html;
-  }
-
-  /**
-   * Creates a dynamic component with its own state.
-   * Should be used if the component is statefull (contains hooks).
-   *
-   * @param {ReactFunction} element - The string containing references
-   * @param {Props} props - The component properties
-   * @param {ReactElement[]} children - The child elements
-   * @return {ReactElement} The created React component
-   */
-  function dyn(element: ReactFunction, props?: Props, children?: ReactElement[]): ReactElement {
-    return createElement(element, props, children);
   }
 
   /**
@@ -70,6 +72,7 @@ export default function figure({ createElement }: Options) {
     for (let i = 0; i < slices.length; i++) {
       slice += slices[i];
       if (values[i] != null) {
+        // create unique reference
         const uid = `$fig-${count++}`;
         refs[uid] = values[i];
         slice += uid ?? '';
@@ -88,20 +91,28 @@ export default function figure({ createElement }: Options) {
   function feed(slice: string, refs: Refs): ReactElement[] {
     const expr = /\$fig-\d+/g;
     const elements: ReactElement[] = [];
-    let match = null;
+    let match: RegExpExecArray | null = null;
     let last = 0;
     while ((match = expr.exec(slice)) !== null) {
       const index = match.index;
       const uid = match[0];
-      elements.push(slice.substring(last, index));
-      let value = refs[uid];
-      if (value instanceof Function) {
-        value = value();
+      const before = slice.substring(last, index);
+      // ignore empty strings
+      if (before.length > 0) {
+        elements.push(before);
       }
-      elements.push(value);
+      const value = refs[uid];
+      // ignore empty values
+      if (value) {
+        elements.push(value);
+      }
       last = index + uid.length;
     }
-    elements.push(slice.substring(last));
+    const after = slice.substring(last);
+    // ignore empty strings
+    if (after.length > 0) {
+      elements.push(after);
+    }
     return elements;
   }
 
@@ -136,47 +147,16 @@ export default function figure({ createElement }: Options) {
         // ignore empty attribute values
         continue;
       }
-      let isDynamic = false;
-      for (const ref in refs) {
-        if (slice === ref) {
-          let match = null;
-          if ((match = /^on:(\w+)$/.exec(key)) !== null) {
-            // add event to props
-            const event = match[1];
-            props[`on${event.substring(0, 1).toUpperCase()}${event.substring(1)}`] = refs[ref];
-          }
-          else {
-            // add attribute to props
-            props[key] = refs[ref];
-          }
-          isDynamic = true;
-          break;
-        }
+      const values = feed(slice, refs);
+      const value = values.length == 1 ? values[0] : values;
+      let attr = key;
+      const match = /^(\w+):(\w+)$/.exec(attr);
+      if (match) {
+        // camel case attribute name
+        const [, pre, name] = match;
+        attr = `${pre}${name.substring(0, 1).toUpperCase()}${name.substring(1)}`;
       }
-      if (!isDynamic) {
-        if (key === 'style') {
-          // convert style attribute into object format
-          const styles: Record<string, string> = {};
-          for (const item of slice.split(';')) {
-            if (item.trim().length === 0) {
-              break;
-            }
-            let [key, value] = item.split(':');
-            key = key.trim();
-            let match = null;
-            if ((match = /-(\w)/.exec(key)) !== null) {
-              const char = match[1];
-              key = key.replace(`-${char}`, char.toUpperCase());
-            }
-            value = value.trim();
-            styles[key] = feed(value, refs).join('');
-          }
-          props[key] = styles;
-        }
-        else {
-          props[key] = feed(slice, refs).join('');
-        }
-      }
+      props[attr] = value instanceof Array ? value.join('') : value;
     }
     const children: ReactElement[] = [];
     // recursively render all child nodes
@@ -184,12 +164,12 @@ export default function figure({ createElement }: Options) {
     const domain = tag.split(':');
     // look up tag name in dictionary
     // deno-lint-ignore no-explicit-any
-    const component: ReactFunction | undefined = domain.reduce((dict: any, level) => {
-      return dict?.[level];
+    const component: ReactFunction | null = domain.reduce((dict: any, level) => {
+      return dict && dict[level] ? dict[level] : null;
     }, dict);
     // use React component or tag name
-    return [createElement(component ?? tag, props, ...children)];
+    return [create(component ?? tag, props, ...children)];
   }
 
-  return { dict, dyn };
+  return { dict, dyn: create };
 }
