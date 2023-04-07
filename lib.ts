@@ -39,6 +39,19 @@ export default function figure({ createElement }: Options) {
   }
 
   /**
+   * Creates a dynamic component with its own state.
+   * Should be used if the component is statefull (contains hooks).
+   *
+   * @param {ReactFunction} element - The string containing references
+   * @param {Props} props - The component properties
+   * @param {ReactElement[]} children - The child elements
+   * @return {ReactElement} The created React component
+   */
+  function dyn(element: ReactFunction, props?: Props, children?: ReactElement[]): ReactElement {
+    return createElement(element, props, children);
+  }
+
+  /**
    * Joins the template literal slices together and replaces the values with references.
    * The values are being mapped to there corresponding references and with the populated
    * HTML string returned.
@@ -178,5 +191,5 @@ export default function figure({ createElement }: Options) {
     return [createElement(component ?? tag, props, ...children)];
   }
 
-  return { dict };
+  return { dict, dyn };
 }
