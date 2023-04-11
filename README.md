@@ -1,5 +1,5 @@
 # figure
-Reactive template literals for React
+The vanilla alternative for writing JSX-based React applications
 
 ### Example
 
