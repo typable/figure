@@ -10,7 +10,7 @@ If you're looking for a more efficient way to build React applications, figure m
 <br/>
 
 ```javascript
-import figure from 'https://typable.dev/cdn/figure/lib.js';
+import figure from 'https://cdn.typable.dev/figure';
 
 const { dict } = figure(React.createElement);
 const html = dict();
