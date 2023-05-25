@@ -1,22 +1,29 @@
-import {
-  Dict,
-  Figure,
-  Props,
-  ReactElement,
-  HtmlFunction,
-  ReactFunction,
-  CreateFunction,
-  Refs,
-  Slices,
-  Values,
-} from './types.ts';
+// @ts-check
 
 /**
- * Initializes the figure utility.
- * @param {CreateFunction} create - The React createElement function.
- * @return {Figure} The util functions collected in an object.
+ * @typedef {Object} ReactElement
+ * @typedef {function(Props=): ReactElement} ReactFunction
+ * @typedef {function(ReactFunction | string, Props?=, ...Object): ReactElement} ReactCreateFunction
+ *
+ * @typedef {TemplateStringsArray} Slices
+ * @typedef {any} Value
+ * @typedef {{[key: string]: any}} Refs
+ * @typedef {any} Props
+ * @typedef {{[key: string]: ReactFunction | Dict}} Dict
+ * @typedef {{ dict: DictFunction, dyn: DynFunction }} Figure
+ *
+ * @typedef {function(Dict=): HTMLFunction} DictFunction
+ * @typedef {function(Slices, ...Value): ReactElement[]} HTMLFunction
+ * @typedef {ReactCreateFunction} DynFunction
  */
-export default function figure(create: CreateFunction): Figure {
+
+/**
+ * Initializes the figure framework.
+ *
+ * @param {ReactCreateFunction} create The React createElement function
+ * @returns {Figure} The util functions collected in an object
+ */
+export default function figure(create) {
 
   // the parser for interpreting HTML
   const parser = new DOMParser();
@@ -25,18 +32,20 @@ export default function figure(create: CreateFunction): Figure {
 
   /**
    * Returns the a function for rendering HTML.
-   * @param {Dict} dict - The dictionary for resolving React components.
-   * @return {Function} The function for rendering HTML.
+   *
+   * @param {Dict} [dict] The dictionary for resolving React components
+   * @returns {HTMLFunction} The function for rendering HTML
    */
-  function dict(dict?: Dict): HtmlFunction {
+  function dict(dict) {
 
     /**
      * Converts the template literal HTML syntax into React elements.
-     * @param {Slices} slices - The template literal slices
-     * @param {Values} values - The template literal values
-     * @return {ReactElement[]} The converted HTML as React elements.
+     *
+     * @param {Slices} slices The template literal slices
+     * @param {...Value} values The template literal values
+     * @returns {ReactElement[]} The converted HTML as React elements
      */
-    function html(slices: Slices, ...values: Values): ReactElement[] {
+    function html(slices, ...values) {
       const [html, refs] = compose(slices, values);
       try {
         const dom = parser.parseFromString(html, 'text/html');
@@ -52,22 +61,22 @@ export default function figure(create: CreateFunction): Figure {
 
     return html;
   }
-
+  
   /**
    * Joins the template literal slices together and replaces the values with references.
    * The values are being mapped to there corresponding references and with the populated
    * HTML string returned.
    *
-   * @param {Slices} slices - The template literal slices
-   * @param {Values} values - The template literal values
-   * @return {[string, Refs]} The joined HTML string and the values mapped to there references.
+   * @param {Slices} slices The template literal slices
+   * @param {Value[]} values The template literal values
+   * @returns {[string, Refs]} The joined HTML string and the values mapped to there references
    */
-  function compose(slices: Slices, values: Values): [string, Refs] {
+  function compose(slices, values) {
     if (slices == null) {
       // handle dyn function without body
       return ['', {}];
     }
-    const refs: Refs = {};
+    const refs = /** @type {Refs} */ ({});
     let slice = '';
     for (let i = 0; i < slices.length; i++) {
       slice += slices[i];
@@ -84,14 +93,14 @@ export default function figure(create: CreateFunction): Figure {
   /**
    * Injects the values into the corresponding reference locations of the string.
    *
-   * @param {string} slice - The string containing references
-   * @param {Refs} refs - The values mapped to there references
-   * @return {ReactElement[]} The string populated with the passed values
+   * @param {string} slice The string containing references
+   * @param {Refs} refs The values mapped to there references
+   * @returns {ReactElement[]} The string populated with the passed values
    */
-  function feed(slice: string, refs: Refs): ReactElement[] {
+  function feed(slice, refs) {
     const expr = /\$fig-\d+/g;
-    const elements: ReactElement[] = [];
-    let match: RegExpExecArray | null = null;
+    const elements = /** @type {ReactElement[]} */ ([]);
+    let match = null;
     let last = 0;
     while ((match = expr.exec(slice)) !== null) {
       const index = match.index;
@@ -119,13 +128,14 @@ export default function figure(create: CreateFunction): Figure {
   /**
    * Converts a HTML node into a React element.
    *
-   * @param {Node} node - The HTML node
-   * @param {Refs} refs - The values mapped to there references
-   * @return {ReactElement[]} The converted HTML node as React element
+   * @param {Node} node The HTML node
+   * @param {Refs} refs The values mapped to there references
+   * @param {Dict} dict The dictionary for resolving React components
+   * @returns {ReactElement[]} The converted HTML node as React element
    */
-  function render(node: Node, refs: Refs, dict: Dict): ReactElement[] {
+  function render(node, refs, dict) {
     if (node.nodeType === Node.TEXT_NODE) {
-      const text = node as Text;
+      const text = /** @type {Text} */ (node);
       if (text.textContent == null) {
         // ignore empty text nodes
         return [];
@@ -136,9 +146,9 @@ export default function figure(create: CreateFunction): Figure {
       // ignore comments
       return [];
     }
-    const element = node as HTMLElement;
+    const element = /** @type {HTMLElement} */ (node);
     const tag = element.tagName.toLowerCase();
-    const props: Props = {};
+    const props = /** @type {Props} */ ({});
     // iterate over each attribute and add it to the props
     for (const attribute of element.attributes) {
       const key = attribute.name;
@@ -158,15 +168,27 @@ export default function figure(create: CreateFunction): Figure {
       }
       props[attr] = value instanceof Array ? value.join('') : value;
     }
-    const children: ReactElement[] = [];
+    const children = /** @type {ReactElement[]} */ ([]);
     // recursively render all child nodes
     (node.childNodes ?? []).forEach((child) => children.push(...render(child, refs, dict)));
-    const domain = tag.split(':');
+    const domains = tag.split(':');
+    let component = /** @type {ReactFunction | null} */ (null);
+    let layer = /** @type {Dict | ReactFunction | null} */ (dict);
     // look up tag name in dictionary
-    // deno-lint-ignore no-explicit-any
-    const component: ReactFunction | null = domain.reduce((dict: any, level) => {
-      return dict && dict[level] ? dict[level] : null;
-    }, dict);
+    for (const domain of domains) {
+      if (layer && typeof layer === 'object' && layer[domain]) {
+        // traverse sublayer
+        layer = /** @type {Dict} */ (layer[domain]);
+        continue;
+      }
+      // domain is not in layer
+      layer = null;
+      break;
+    }
+    if (layer) {
+      // found component for tag
+      component = /** @type {ReactFunction} */ (layer);
+    }
     // use React component or tag name
     return [create(component ?? tag, props, ...children)];
   }
