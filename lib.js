@@ -112,7 +112,7 @@ export default function figure(create) {
       }
       const value = refs[uid];
       // ignore empty values
-      if (value) {
+      if (value !== undefined && value !== null) {
         elements.push(value);
       }
       last = index + uid.length;
