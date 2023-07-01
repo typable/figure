@@ -255,6 +255,13 @@ export default function figure(create) {
           }
         }
       }
+      const propsMatch = /^\$props$/.exec(attr);
+      if (propsMatch) {
+        // bind all props which are passed to $props
+        for (const [key, prop] of Object.entries(value)) {
+          props[key] = prop;
+        }
+      }
       props[attr] = value instanceof Array ? value.join('') : value;
     }
     const children = /** @type {ReactElement[]} */ ([]);
