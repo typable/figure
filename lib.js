@@ -262,6 +262,11 @@ export default function figure(create) {
           props[key] = prop;
         }
       }
+      const htmlMatch = /^\$html$/.exec(attr);
+      if (htmlMatch) {
+        // bind inner html
+        props['dangerouslySetInnerHTML'] = { __html: value };
+      }
       props[attr] = value instanceof Array ? value.join('') : value;
     }
     const children = /** @type {ReactElement[]} */ ([]);
